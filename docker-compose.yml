@@ -1,0 +1,74 @@
+services:
+  qwen-vl-server:
+    build:
+      context: .
+      args:
+        BASE_IMAGE: ${BASE_IMAGE:-vllm/vllm-openai:${VLLM_TAG:-v0.7.3}}
+        HTTP_PROXY: ${http_proxy:-}
+        HTTPS_PROXY: ${https_proxy:-}
+        NO_PROXY: ${no_proxy:-}
+    image: ${IMAGE_NAME:-qwen-vl-vllm-v0.7.3}
+    container_name: ${CONTAINER_NAME:-qwen_vl_server}
+    restart: always
+    ipc: host
+    shm_size: ${SHM_SIZE:-8gb}
+    ports:
+      - "${HOST_PORT:-18000}:${CONTAINER_PORT:-8000}"
+    volumes:
+      - type: bind
+        source: ${MODEL_DIR:-/data/xiongle/qwen-vl-server/models/Qwen2.5-VL-3B-Instruct}
+        target: /models/current
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${HF_CACHE_DIR:-/data/xiongle/qwen-vl-server/hf_cache}
+        target: /root/.cache/huggingface
+    environment:
+      TZ: Asia/Shanghai
+      MODEL_NAME: ${MODEL_NAME:-qwen25-vl-3b}
+      NVIDIA_VISIBLE_DEVICES: ${GPU_DEVICE:-0}
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+      HF_HOME: /root/.cache/huggingface
+      TRANSFORMERS_CACHE: /root/.cache/huggingface
+      HF_HUB_ENABLE_HF_TRANSFER: "0"
+      VLLM_ENABLE_CUDA_COMPATIBILITY: ${VLLM_ENABLE_CUDA_COMPATIBILITY:-0}
+      MODEL_PATH: /models/current
+      SERVED_MODEL_NAME: ${SERVED_MODEL_NAME:-Qwen2.5-VL-3B-Instruct}
+      VLLM_HOST: 0.0.0.0
+      VLLM_PORT: ${CONTAINER_PORT:-8000}
+      DTYPE: ${DTYPE:-half}
+      MAX_MODEL_LEN: ${MAX_MODEL_LEN:-4096}
+      GPU_MEMORY_UTILIZATION: ${GPU_MEMORY_UTILIZATION:-0.90}
+      LIMIT_IMAGES_PER_PROMPT: ${LIMIT_IMAGES_PER_PROMPT:-5}
+      LIMIT_VIDEOS_PER_PROMPT: ${LIMIT_VIDEOS_PER_PROMPT:-5}
+      TENSOR_PARALLEL_SIZE: ${TENSOR_PARALLEL_SIZE:-1}
+      ENFORCE_EAGER: ${ENFORCE_EAGER:-0}
+      TRUST_REMOTE_CODE: ${TRUST_REMOTE_CODE:-0}
+      EXTRA_VLLM_ARGS: ${EXTRA_VLLM_ARGS:-}
+      http_proxy: ${http_proxy:-}
+      https_proxy: ${https_proxy:-}
+      no_proxy: ${no_proxy:-localhost,127.0.0.1,192.168.0.0/16,172.31.0.0/16,10.0.0.0/8}
+      HTTP_PROXY: ${http_proxy:-}
+      HTTPS_PROXY: ${https_proxy:-}
+      NO_PROXY: ${no_proxy:-localhost,127.0.0.1,192.168.0.0/16,172.31.0.0/16,10.0.0.0/8}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids:
+                - "${GPU_DEVICE:-0}"
+              capabilities:
+                - gpu
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:${CONTAINER_PORT:-8000}/health', timeout=5)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

@@ -1,0 +1,8 @@
+.env
+.cache/
+hf_cache/
+models/
+__pycache__/
+*.pyc
+*.log
+
