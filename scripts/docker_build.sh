@@ -13,21 +13,21 @@ CANDIDATES=(
   "docker.1panel.live/vllm/vllm-openai:${VLLM_TAG}"
 )
 
-BUILD_ARGS=()
+DOCKER_BUILD_CMD=(docker build)
 if [[ -n "${http_proxy:-}" ]]; then
-  BUILD_ARGS+=(--build-arg "HTTP_PROXY=${http_proxy}")
+  DOCKER_BUILD_CMD+=(--build-arg "HTTP_PROXY=${http_proxy}")
 fi
 if [[ -n "${https_proxy:-}" ]]; then
-  BUILD_ARGS+=(--build-arg "HTTPS_PROXY=${https_proxy}")
+  DOCKER_BUILD_CMD+=(--build-arg "HTTPS_PROXY=${https_proxy}")
 fi
 if [[ -n "${no_proxy:-}" ]]; then
-  BUILD_ARGS+=(--build-arg "NO_PROXY=${no_proxy}")
+  DOCKER_BUILD_CMD+=(--build-arg "NO_PROXY=${no_proxy}")
 fi
 if [[ -n "${PIP_INDEX_URL:-}" ]]; then
-  BUILD_ARGS+=(--build-arg "PIP_INDEX_URL=${PIP_INDEX_URL}")
+  DOCKER_BUILD_CMD+=(--build-arg "PIP_INDEX_URL=${PIP_INDEX_URL}")
 fi
 if [[ -n "${QWEN_VL_UTILS_VERSION:-}" ]]; then
-  BUILD_ARGS+=(--build-arg "QWEN_VL_UTILS_VERSION=${QWEN_VL_UTILS_VERSION}")
+  DOCKER_BUILD_CMD+=(--build-arg "QWEN_VL_UTILS_VERSION=${QWEN_VL_UTILS_VERSION}")
 fi
 
 BASE_IMAGE=""
@@ -47,10 +47,11 @@ if [[ -z "${BASE_IMAGE}" ]]; then
   exit 1
 fi
 
-DOCKER_BUILDKIT=1 docker build \
-  --build-arg "BASE_IMAGE=${BASE_IMAGE}" \
-  "${BUILD_ARGS[@]}" \
-  -t "${IMAGE_NAME}" \
+DOCKER_BUILD_CMD+=(
+  --build-arg "BASE_IMAGE=${BASE_IMAGE}"
+  -t "${IMAGE_NAME}"
   .
+)
+DOCKER_BUILDKIT=1 "${DOCKER_BUILD_CMD[@]}"
 
 echo ">>> Build completed: ${IMAGE_NAME}"
