@@ -101,7 +101,7 @@ qwen-vl-vllm-v0.11.0
 
 ## 启动服务
 
-每次只改 `MODEL_NAME` 即可切换模型；脚本会解析模型目录、served name、镜像名、CUDA 要求。
+每次只改 `MODEL_NAME` 即可切换模型；脚本会解析模型目录、served name、镜像名、CUDA 要求。下面使用 gpu-04 的 15GB T4 实测配置：关闭 CUDA Graph，并降低 KV Cache 和多模态输入的显存占用。
 
 ```bash
 cd /data/xiongle/qwen-vl-server
@@ -109,6 +109,10 @@ cd /data/xiongle/qwen-vl-server
 MODEL_NAME=qwen25-vl-3b \
 GPU_DEVICE=0 \
 HOST_PORT=18000 \
+GPU_MEMORY_UTILIZATION=0.80 \
+ENFORCE_EAGER=1 \
+LIMIT_IMAGES_PER_PROMPT=1 \
+LIMIT_VIDEOS_PER_PROMPT=1 \
 ./scripts/docker_run.sh
 ```
 
@@ -118,6 +122,10 @@ HOST_PORT=18000 \
 MODEL_NAME=qwen3-vl-4b \
 GPU_DEVICE=0 \
 HOST_PORT=18000 \
+GPU_MEMORY_UTILIZATION=0.80 \
+ENFORCE_EAGER=1 \
+LIMIT_IMAGES_PER_PROMPT=1 \
+LIMIT_VIDEOS_PER_PROMPT=1 \
 ./scripts/docker_run.sh
 ```
 
@@ -127,6 +135,10 @@ HOST_PORT=18000 \
 MODEL_NAME=qwen35-4b \
 GPU_DEVICE=0 \
 HOST_PORT=18000 \
+GPU_MEMORY_UTILIZATION=0.80 \
+ENFORCE_EAGER=1 \
+LIMIT_IMAGES_PER_PROMPT=1 \
+LIMIT_VIDEOS_PER_PROMPT=1 \
 ./scripts/docker_run.sh
 ```
 
@@ -179,6 +191,7 @@ docker logs -f qwen_vl_server
 | `DTYPE` | `half` | T4 必须用 half/fp16 |
 | `MAX_MODEL_LEN` | `4096` | 降低可减少显存 |
 | `GPU_MEMORY_UTILIZATION` | `0.90` | 共享机器建议降到 `0.70~0.85` |
+| `ENFORCE_EAGER` | `0` | 15GB T4 建议设为 `1`，避免 CUDA Graph 预热时 OOM |
 | `LIMIT_IMAGES_PER_PROMPT` | `5` | 单请求图片数上限 |
 | `LIMIT_VIDEOS_PER_PROMPT` | `5` | 单请求视频数上限 |
 | `EXTRA_VLLM_ARGS` | profile 默认 | Qwen3.5 默认加 `--reasoning-parser qwen3` |
